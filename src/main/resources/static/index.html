@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Translate & Dub Sample Video</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        h1, h3 { margin-top: 20px; }
+        select, button { margin: 10px 0; }
+        #log { white-space: pre-wrap; background: #f4f4f4; padding: 10px; border: 1px solid #ccc; }
+        video, audio { margin-top: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+<h1>🎬 Translate & Dub Sample Video</h1>
+
+<label for="videoSelect">🎥 Choose video:</label><br>
+<select id="videoSelect">
+    <option value="sample.mp4">Sample Video</option>
+</select><br>
+
+<label for="languageSelect">🌐 Choose language:</label><br>
+<select id="languageSelect">
+    <option value="ES">Spanish</option>
+    <option value="FR">French</option>
+    <option value="DE">German</option>
+    <option value="zh">Chinese (Mandarin)</option>
+    <option value="ru">Russian</option>
+</select><br>
+
+<button onclick="translateVideo()">🔁 Translate & Dub</button>
+
+<h3>Status & Info:</h3>
+<div id="log">Waiting for input...</div>
+
+<h3>📺 Original Video:</h3>
+<video id="videoPlayer" width="400" controls muted>
+    <source id="videoSource" src="sample.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+<h3>🔊 Translated Audio:</h3>
+<audio id="dubAudio" controls>
+    <source src="" type="audio/wav">
+    Your browser does not support the audio element.
+</audio>
+
+<h3>🎞️ Dubbed Video (Output):</h3>
+<video id="dubbedVideo" width="400" controls>
+    <source id="dubbedSource" src="" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+<script>
+    function logMessage(msg) {
+        const logDiv = document.getElementById("log");
+        logDiv.textContent += "\n" + msg;
+    }
+
+    function translateVideo() {
+        const filename = document.getElementById("videoSelect").value;
+        const language = document.getElementById("languageSelect").value;
+        const url = `/api/translate/Video?filename=${filename}&language=${language}`;
+        const logDiv = document.getElementById("log");
+
+        logDiv.textContent = "🔄 Starting translation...";
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error("Network response was not ok");
+                return response.json();
+            })
+            .then(data => {
+                logMessage("✅ Translation complete!");
+
+                if (data.segments && Array.isArray(data.segments)) {
+                    const transcription = data.segments.map((seg, i) =>
+                        `${i + 1}. [${seg.start}–${seg.end}] ${seg.text} → ${seg.translatedText || ""}`
+                    ).join("\n");
+                    logMessage("\n📝 Transcription:\n" + transcription);
+                } else {
+                    logMessage("⚠️ No transcription data returned.");
+                }
+
+                // Set translated audio
+                const audio = document.getElementById("dubAudio");
+                audio.src = "final_cloned_synced.wav";
+                audio.load();
+
+                // Set dubbed video
+                const dubbedVideo = document.getElementById("dubbedVideo");
+                const dubbedSource = document.getElementById("dubbedSource");
+                dubbedSource.src = data.videoFile || "output_dubbed.mp4";
+                dubbedVideo.load();
+            })
+            .catch(err => {
+                console.error(err);
+                logDiv.textContent = "❌ Error: " + err.message;
+            });
+    }
+</script>
+
+</body>
+</html>
+
